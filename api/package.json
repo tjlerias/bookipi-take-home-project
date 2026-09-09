@@ -1,0 +1,40 @@
+{
+  "name": "flash-sale-api",
+  "version": "1.0.0",
+  "description": "High-Throughput Flash Sale System",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "npm run build:ts && tsc -p test/tsconfig.json && DOTENV_CONFIG_PATH=../.env c8 node -r dotenv/config --test -r ts-node/register \"test/**/*.ts\"",
+    "start": "npm run build:ts && fastify start -l info dist/app.js",
+    "build:ts": "tsc",
+    "watch:ts": "tsc -w",
+    "dev": "npm run build:ts && concurrently -k -p \"[{name}]\" -n \"TypeScript,App\" -c \"yellow.bold,cyan.bold\" \"npm:watch:ts\" \"npm:dev:start\"",
+    "dev:start": "DOTENV_CONFIG_PATH=../.env fastify start --ignore-watch=.ts$ -w -l info -P dist/app.js",
+    "db:migrate": "DOTENV_CONFIG_PATH=../.env node -r dotenv/config -r ts-node/register src/migrate.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/autoload": "^6.0.0",
+    "@fastify/postgres": "^6.1.0",
+    "@fastify/sensible": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "fastify": "^5.0.0",
+    "fastify-cli": "^7.4.1",
+    "fastify-plugin": "^5.0.0",
+    "ioredis": "^6.0.0",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.8",
+    "@types/pg": "^8.23.1",
+    "c8": "^10.1.2",
+    "concurrently": "^9.0.0",
+    "fastify-tsconfig": "^3.0.0",
+    "ts-node": "^10.4.0",
+    "typescript": "~5.9.2"
+  }
+}
