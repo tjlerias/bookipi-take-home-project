@@ -1,17 +1,4 @@
-export interface SaleConfig {
-  id: string;
-  startsAt: Date;
-  endsAt: Date;
-  stock: number;
-}
-
-export interface AppConfig {
-  port: number;
-  databaseUrl: string;
-  redisUrl: string;
-  rateLimitEnabled: boolean;
-  sale: SaleConfig;
-}
+import { AppConfig } from './interfaces/app-config.interface';
 
 const ONE_HOUR_MS = 60 * 60 * 1000;
 

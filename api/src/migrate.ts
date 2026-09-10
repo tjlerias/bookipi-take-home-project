@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Client } from 'pg';
-import { loadConfig } from './config/config';
+import { loadConfig } from './core/config/configuration';
 
 const MIGRATIONS_DIR = join(__dirname, '..', 'migrations');
 

@@ -1,11 +1,10 @@
-import { Global, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { resolve } from 'node:path';
-import { loadConfig } from './config';
+import { loadConfig } from './configuration';
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
 
-@Global()
 @Module({
   imports: [
     ConfigModule.forRoot({
