@@ -18,7 +18,10 @@
     "test:cov": "NODE_OPTIONS=--experimental-vm-modules jest --coverage",
     "test:debug": "NODE_OPTIONS=--experimental-vm-modules node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "NODE_OPTIONS=--experimental-vm-modules jest --config ./test/jest-e2e.json",
-    "db:migrate": "DOTENV_CONFIG_PATH=../.env ts-node -r dotenv/config src/migrate.ts"
+    "db:migrate": "DOTENV_CONFIG_PATH=../.env ts-node -r dotenv/config src/migrate.ts",
+    "test:integration": "NODE_OPTIONS=--experimental-vm-modules jest --config ./test/jest-integration.json",
+    "db:seed": "DOTENV_CONFIG_PATH=../.env ts-node -r dotenv/config src/seed.ts",
+    "sale:reset": "DOTENV_CONFIG_PATH=../.env ts-node -r dotenv/config src/reset.ts"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

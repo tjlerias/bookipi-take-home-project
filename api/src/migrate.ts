@@ -6,8 +6,8 @@ import { loadConfig } from './core/config/configuration';
 const MIGRATIONS_DIR = join(__dirname, '..', 'migrations');
 
 async function migrate(): Promise<void> {
-  const config = loadConfig();
-  const client = new Client({ connectionString: config.databaseUrl });
+  const { databaseUrl } = loadConfig();
+  const client = new Client({ connectionString: databaseUrl });
   await client.connect();
 
   try {
@@ -20,14 +20,7 @@ async function migrate(): Promise<void> {
       await client.query(await readFile(join(MIGRATIONS_DIR, file), 'utf8'));
       console.log(`applied ${file}`);
     }
-    await client.query(
-      'INSERT INTO inventory (sale_id, stock) VALUES ($1, $2) ON CONFLICT (sale_id) DO NOTHING',
-      [config.sale.id, config.sale.stock],
-    );
     await client.query('COMMIT');
-    console.log(
-      `seeded sale "${config.sale.id}" with stock ${config.sale.stock}`,
-    );
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;
