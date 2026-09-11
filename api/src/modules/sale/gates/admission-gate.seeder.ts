@@ -1,34 +1,33 @@
-import {
-  Inject,
-  Injectable,
-  Logger,
-  OnApplicationBootstrap,
-} from '@nestjs/common';
-import { APP_CONFIG } from '../../../core/config/config.module';
-import type { AppConfig } from '../../../core/config/interfaces/app-config.interface';
+import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common';
+import { errorMessage } from '../../../core/utils/error-message.util';
+import { CurrentSaleService } from '../current-sale.service';
 import { AdmissionGate } from '../interfaces/admission-gate.interface';
-import { OrderRepository } from '../interfaces/order-repository.interface';
+import { SaleRepository } from '../interfaces/sale-repository.interface';
 
 @Injectable()
 export class AdmissionGateSeeder implements OnApplicationBootstrap {
   private readonly logger = new Logger(AdmissionGateSeeder.name);
 
   constructor(
-    @Inject(APP_CONFIG) private readonly config: AppConfig,
-    private readonly gate: AdmissionGate,
-    private readonly orders: OrderRepository,
+    private readonly admissionGate: AdmissionGate,
+    private readonly currentSaleService: CurrentSaleService,
+    private readonly saleRepository: SaleRepository,
   ) {}
 
   async onApplicationBootstrap(): Promise<void> {
-    const { id } = this.config.sale;
+    const { id, item } = this.currentSaleService.getSale();
 
     try {
-      const stock = await this.orders.remainingStock(id);
-      await this.gate.seed(id, stock);
+      const stock = await this.saleRepository.remainingStock(
+        id,
+        item.productId,
+      );
+
+      await this.admissionGate.seed(id, item.productId, stock);
+
       this.logger.log(`admission gate seeded for sale "${id}"`);
     } catch (err) {
-      const reason = err instanceof Error ? err.message : String(err);
-      this.logger.warn(`could not seed admission gate: ${reason}`);
+      this.logger.warn(`could not seed admission gate: ${errorMessage(err)}`);
     }
   }
 }

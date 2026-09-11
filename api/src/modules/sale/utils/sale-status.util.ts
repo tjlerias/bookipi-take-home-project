@@ -1,22 +1,26 @@
-import { SaleConfig } from '../../../core/config/interfaces/app-config.interface';
-import { SaleStatus } from '../interfaces/sale-status.interface';
+import { SaleStatus } from '../enums/sale-status.enum';
+
+export interface SalePeriod {
+  startsAt: Date;
+  endsAt: Date;
+}
 
 export function computeStatus(
-  sale: SaleConfig,
+  sale: SalePeriod,
   now: Date,
   remaining: number,
 ): SaleStatus {
   if (now < sale.startsAt) {
-    return 'upcoming';
+    return SaleStatus.Upcoming;
   }
 
   if (now >= sale.endsAt) {
-    return 'ended';
+    return SaleStatus.Ended;
   }
 
   if (remaining <= 0) {
-    return 'sold_out';
+    return SaleStatus.SoldOut;
   }
 
-  return 'active';
+  return SaleStatus.Active;
 }

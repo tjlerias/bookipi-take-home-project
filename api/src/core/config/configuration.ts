@@ -1,35 +1,11 @@
-import { AppConfig } from './interfaces/app-config.interface';
+import { AppConfig, SaleWindow } from './interfaces/app-config.interface';
 
-const ONE_HOUR_MS = 60 * 60 * 1000;
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-export function loadConfig(
-  env: NodeJS.ProcessEnv = process.env,
-  now: Date = new Date(),
-): AppConfig {
+export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const problems: string[] = [];
 
   const port = parseInteger(env.PORT, 3000, 'PORT', problems);
-  const stock = parseInteger(env.SALE_STOCK, 100, 'SALE_STOCK', problems);
-  const startsAt = parseDate(env.SALE_START, now, 'SALE_START', problems);
-  const endsAt = parseDate(
-    env.SALE_END,
-    new Date(now.getTime() + ONE_HOUR_MS),
-    'SALE_END',
-    problems,
-  );
-
-  if (stock <= 0) {
-    problems.push('SALE_STOCK must be greater than 0');
-  }
-  if (endsAt.getTime() <= startsAt.getTime()) {
-    problems.push('SALE_END must be after SALE_START');
-  }
-
-  const saleId = (env.SALE_ID ?? 'launch-1').trim();
-  if (saleId === '') {
-    problems.push('SALE_ID must not be empty');
-  }
-
   const databaseUrl = env.DATABASE_URL ?? buildDatabaseUrl(env, problems);
   const redisUrl = env.REDIS_URL ?? 'redis://localhost:6379';
 
@@ -42,8 +18,31 @@ export function loadConfig(
     databaseUrl,
     redisUrl,
     rateLimitEnabled: parseBoolean(env.RATE_LIMIT_ENABLED, true),
-    sale: Object.freeze({ id: saleId, startsAt, endsAt, stock }),
   });
+}
+
+export function loadSaleWindow(
+  env: NodeJS.ProcessEnv = process.env,
+  now: Date = new Date(),
+): SaleWindow {
+  const problems: string[] = [];
+  const startsAt = parseDate(env.SALE_START, now, 'SALE_START', problems);
+  const endsAt = parseDate(
+    env.SALE_END,
+    new Date(now.getTime() + ONE_DAY_MS),
+    'SALE_END',
+    problems,
+  );
+
+  if (endsAt.getTime() <= startsAt.getTime()) {
+    problems.push('SALE_END must be after SALE_START');
+  }
+
+  if (problems.length > 0) {
+    throw new Error(`Invalid sale window:\n  - ${problems.join('\n  - ')}`);
+  }
+
+  return { startsAt, endsAt };
 }
 
 function buildDatabaseUrl(env: NodeJS.ProcessEnv, problems: string[]): string {
@@ -75,11 +74,13 @@ function parseInteger(
   if (raw === undefined || raw.trim() === '') {
     return fallback;
   }
+
   const value = Number(raw);
   if (!Number.isInteger(value)) {
     problems.push(`${name} must be an integer, got "${raw}"`);
     return fallback;
   }
+
   return value;
 }
 
@@ -92,11 +93,13 @@ function parseDate(
   if (raw === undefined || raw.trim() === '') {
     return fallback;
   }
+
   const value = new Date(raw);
   if (Number.isNaN(value.getTime())) {
     problems.push(`${name} must be an ISO 8601 date, got "${raw}"`);
     return fallback;
   }
+
   return value;
 }
 
@@ -104,5 +107,6 @@ function parseBoolean(raw: string | undefined, fallback: boolean): boolean {
   if (raw === undefined || raw.trim() === '') {
     return fallback;
   }
+
   return !['false', '0', 'no', 'off'].includes(raw.trim().toLowerCase());
 }

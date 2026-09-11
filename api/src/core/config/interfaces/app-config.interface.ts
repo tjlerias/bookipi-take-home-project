@@ -1,8 +1,6 @@
-export interface SaleConfig {
-  id: string;
+export interface SaleWindow {
   startsAt: Date;
   endsAt: Date;
-  stock: number;
 }
 
 export interface AppConfig {
@@ -10,5 +8,4 @@ export interface AppConfig {
   databaseUrl: string;
   redisUrl: string;
   rateLimitEnabled: boolean;
-  sale: SaleConfig;
 }

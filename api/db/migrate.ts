@@ -1,31 +1,36 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { Client } from 'pg';
-import { loadConfig } from './core/config/configuration';
+import { loadConfig } from '../src/core/config/configuration';
 
-const MIGRATIONS_DIR = join(__dirname, '..', 'migrations');
+const MIGRATIONS_DIR = join(__dirname, 'migrations');
 
 async function migrate(): Promise<void> {
   const { databaseUrl } = loadConfig();
-  const client = new Client({ connectionString: databaseUrl });
-  await client.connect();
+  const postgresClient = new Client({ connectionString: databaseUrl });
+
+  await postgresClient.connect();
 
   try {
     const files = (await readdir(MIGRATIONS_DIR))
       .filter((name) => name.endsWith('.sql'))
       .sort();
 
-    await client.query('BEGIN');
+    await postgresClient.query('BEGIN');
+
     for (const file of files) {
-      await client.query(await readFile(join(MIGRATIONS_DIR, file), 'utf8'));
+      await postgresClient.query(
+        await readFile(join(MIGRATIONS_DIR, file), 'utf8'),
+      );
       console.log(`applied ${file}`);
     }
-    await client.query('COMMIT');
+
+    await postgresClient.query('COMMIT');
   } catch (err) {
-    await client.query('ROLLBACK');
+    await postgresClient.query('ROLLBACK');
     throw err;
   } finally {
-    await client.end();
+    await postgresClient.end();
   }
 }
 
