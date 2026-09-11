@@ -18,10 +18,10 @@
     "test:cov": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest --coverage",
     "test:debug": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest --config ./test/jest-e2e.json",
-    "db:migrate": "DOTENV_CONFIG_PATH=../.env ts-node -r dotenv/config db/migrate.ts",
+    "db:migrate": "ts-node -r dotenv/config db/migrate.ts",
     "test:integration": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest --config ./test/jest-integration.json",
-    "db:seed": "DOTENV_CONFIG_PATH=../.env ts-node -r dotenv/config db/seed.ts",
-    "sale:reset": "DOTENV_CONFIG_PATH=../.env ts-node -r dotenv/config db/reset.ts",
+    "db:seed": "ts-node -r dotenv/config db/seed.ts",
+    "sale:reset": "ts-node -r dotenv/config db/reset.ts",
     "verify": "npm audit signatures && npm audit --audit-level=high"
   },
   "dependencies": {

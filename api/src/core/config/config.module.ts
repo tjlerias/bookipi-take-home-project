@@ -1,19 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { resolve } from 'node:path';
 import { loadConfig } from './configuration';
 
 export const APP_CONFIG = Symbol('APP_CONFIG');
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      envFilePath: [
-        resolve(process.cwd(), '../.env'),
-        resolve(process.cwd(), '.env'),
-      ],
-    }),
-  ],
+  imports: [ConfigModule.forRoot()],
   providers: [{ provide: APP_CONFIG, useFactory: () => loadConfig() }],
   exports: [APP_CONFIG],
 })
