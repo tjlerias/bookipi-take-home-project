@@ -3,14 +3,14 @@ function itemPrefix(saleId: string, productId: string): string {
   return `sale:{${saleId}}:item:${productId}`;
 }
 
-export function ticketsKey(saleId: string, productId: string): string {
-  return `${itemPrefix(saleId, productId)}:tickets`;
+export function availableKey(saleId: string, productId: string): string {
+  return `${itemPrefix(saleId, productId)}:available`;
+}
+
+export function leasesKey(saleId: string, productId: string): string {
+  return `${itemPrefix(saleId, productId)}:leases`;
 }
 
 export function unitsKey(saleId: string, productId: string): string {
   return `${itemPrefix(saleId, productId)}:units`;
-}
-
-export function holdersKey(saleId: string, productId: string): string {
-  return `${itemPrefix(saleId, productId)}:holders`;
 }

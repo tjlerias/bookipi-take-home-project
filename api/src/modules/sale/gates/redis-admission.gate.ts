@@ -6,25 +6,38 @@ import {
   AdmissionResult,
   AdmitRequest,
 } from '../interfaces/admission-gate.interface';
-import { holdersKey, ticketsKey, unitsKey } from './redis-admission.keys';
-import { ADMIT_SCRIPT, RELEASE_SCRIPT } from './redis-admission.scripts';
+import { availableKey, leasesKey, unitsKey } from './redis-admission.keys';
+import {
+  ADMIT_SCRIPT,
+  CONFIRM_SCRIPT,
+  REMAINING_SCRIPT,
+} from './redis-admission.scripts';
+
+const LEASE_TTL_MS = 10_000;
 
 interface GateCommands {
   admitUser(
-    ticketsKey: string,
+    availableKey: string,
+    leasesKey: string,
     unitsKey: string,
-    holdersKey: string,
     userId: string,
     nowMs: string,
+    expiresAtMs: string,
     maxPerUser: string,
   ): Promise<AdmissionResult>;
 
-  releaseUser(
-    ticketsKey: string,
+  confirmUser(
+    availableKey: string,
+    leasesKey: string,
     unitsKey: string,
-    holdersKey: string,
     userId: string,
   ): Promise<number>;
+
+  remainingStock(
+    availableKey: string,
+    leasesKey: string,
+    nowMs: string,
+  ): Promise<number | null>;
 }
 
 @Injectable()
@@ -37,58 +50,74 @@ export class RedisAdmissionGate implements AdmissionGate {
       lua: ADMIT_SCRIPT,
     });
 
-    redisClient.defineCommand('releaseUser', {
+    redisClient.defineCommand('confirmUser', {
       numberOfKeys: 3,
-      lua: RELEASE_SCRIPT,
+      lua: CONFIRM_SCRIPT,
+    });
+
+    redisClient.defineCommand('remainingStock', {
+      numberOfKeys: 2,
+      lua: REMAINING_SCRIPT,
     });
 
     this.redisClient = redisClient as Redis & GateCommands;
   }
 
   async seed(saleId: string, productId: string, stock: number): Promise<void> {
-    await this.redisClient.set(ticketsKey(saleId, productId), stock, 'NX');
+    await this.redisClient.set(availableKey(saleId, productId), stock, 'NX');
   }
 
   admit({ saleId, productId, userId, maxPerUser, now }: AdmitRequest) {
     return this.redisClient.admitUser(
-      ticketsKey(saleId, productId),
+      availableKey(saleId, productId),
+      leasesKey(saleId, productId),
       unitsKey(saleId, productId),
-      holdersKey(saleId, productId),
       userId,
       String(now.getTime()),
+      String(now.getTime() + LEASE_TTL_MS),
       String(maxPerUser),
     );
   }
 
-  async release(
+  async confirm(
     saleId: string,
     productId: string,
     userId: string,
-  ): Promise<boolean> {
-    const released = await this.redisClient.releaseUser(
-      ticketsKey(saleId, productId),
+  ): Promise<void> {
+    await this.redisClient.confirmUser(
+      availableKey(saleId, productId),
+      leasesKey(saleId, productId),
       unitsKey(saleId, productId),
-      holdersKey(saleId, productId),
       userId,
     );
-
-    return released === 1;
   }
 
-  async remainingTickets(
+  async cancel(
     saleId: string,
     productId: string,
-  ): Promise<number | null> {
-    const value = await this.redisClient.get(ticketsKey(saleId, productId));
+    userId: string,
+  ): Promise<void> {
+    await this.redisClient.zrem(leasesKey(saleId, productId), userId);
+  }
 
+  async remainingStock(
+    saleId: string,
+    productId: string,
+    now: Date,
+  ): Promise<number | null> {
+    const value = await this.redisClient.remainingStock(
+      availableKey(saleId, productId),
+      leasesKey(saleId, productId),
+      String(now.getTime()),
+    );
     return value === null ? null : Number(value);
   }
 
   async reset(saleId: string, productId: string): Promise<void> {
     await this.redisClient.del(
-      ticketsKey(saleId, productId),
+      availableKey(saleId, productId),
+      leasesKey(saleId, productId),
       unitsKey(saleId, productId),
-      holdersKey(saleId, productId),
     );
   }
 }

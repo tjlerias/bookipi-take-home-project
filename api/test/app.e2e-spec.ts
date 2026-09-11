@@ -10,6 +10,7 @@ import { configureApp } from '../src/app.setup';
 import { PG_POOL } from '../src/core/database/database.providers';
 import { CurrentSaleService } from '../src/modules/sale/current-sale.service';
 import { AdmissionGate } from '../src/modules/sale/interfaces/admission-gate.interface';
+import { SaleRepository } from '../src/modules/sale/interfaces/sale-repository.interface';
 
 describe('API (e2e)', () => {
   let app: NestFastifyApplication;
@@ -35,7 +36,6 @@ describe('API (e2e)', () => {
 
   afterAll(async () => {
     const pool = app.get<Pool>(PG_POOL);
-    const gate = app.get(AdmissionGate);
     for (const user of users) {
       const deleted = await pool.query(
         `DELETE FROM orders
@@ -55,10 +55,14 @@ describe('API (e2e)', () => {
          WHERE sale_id = $1`,
         [saleId, deleted.rowCount ?? 0],
       );
-      while (await gate.release(saleId, productId, user)) {
-        // release every ticket the user held
-      }
     }
+    const gate = app.get(AdmissionGate);
+    await gate.reset(saleId, productId);
+    await gate.seed(
+      saleId,
+      productId,
+      await app.get(SaleRepository).remainingStock(saleId, productId),
+    );
     await app.close();
   });
 
@@ -125,6 +129,23 @@ describe('API (e2e)', () => {
     });
   });
 
+  it('a lease that never became an order expires on its own', async () => {
+    const userId = newUser();
+    const gate = app.get(AdmissionGate);
+    const now = new Date();
+    const before = await gate.remainingStock(saleId, productId, now);
+
+    await gate.admit({
+      saleId,
+      productId,
+      userId,
+      maxPerUser: 1,
+      now: new Date(now.getTime() - 120_000),
+    });
+
+    expect(await gate.remainingStock(saleId, productId, now)).toBe(before);
+  });
+
   it('GET /api/v1/sale/purchase/:userId reflects the purchase', async () => {
     const userId = newUser();
     await buy(userId);
@@ -136,7 +157,6 @@ describe('API (e2e)', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({
       purchased: true,
-      unitsUsed: 1,
       orders: [{ priceCents: expect.any(Number) }],
     });
 
@@ -144,6 +164,6 @@ describe('API (e2e)', () => {
       method: 'GET',
       url: '/api/v1/sale/purchase/nobody@example.com',
     });
-    expect(unknown.json()).toMatchObject({ purchased: false, unitsUsed: 0 });
+    expect(unknown.json()).toMatchObject({ purchased: false, orders: [] });
   });
 });

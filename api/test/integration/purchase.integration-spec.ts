@@ -19,10 +19,9 @@ class DownGate implements AdmissionGate {
   async admit(): Promise<never> {
     throw new Error('gate down');
   }
-  async release(): Promise<boolean> {
-    return false;
-  }
-  async remainingTickets(): Promise<number | null> {
+  async confirm(): Promise<void> {}
+  async cancel(): Promise<void> {}
+  async remainingStock(): Promise<number | null> {
     throw new Error('gate down');
   }
   async reset(): Promise<void> {}

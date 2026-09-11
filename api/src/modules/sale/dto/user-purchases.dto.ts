@@ -6,7 +6,6 @@ export class UserPurchaseOrderDto {
 
 export class UserPurchasesDto {
   purchased: boolean;
-  unitsUsed: number;
   maxPerUser: number;
   orders: UserPurchaseOrderDto[];
 }

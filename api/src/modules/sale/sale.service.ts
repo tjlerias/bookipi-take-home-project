@@ -14,7 +14,9 @@ import { RejectionReason } from './enums/rejection-reason.enum';
 import { ResultStatus } from './enums/result-status.enum';
 import {
   AdmissionGate,
+  AdmissionResult,
   AdmitRequest,
+  GATE_UNSEEDED,
 } from './interfaces/admission-gate.interface';
 import { PurchaseResult } from './interfaces/purchase-result.interface';
 import { SaleAllocationRepository } from './interfaces/sale-allocation-repository.interface';
@@ -23,6 +25,9 @@ import { rejected } from './utils/purchase-result.util';
 import { computeStatus } from './utils/sale-status.util';
 
 const GATE_BYPASSED = 'bypassed';
+
+type Admission =
+  Exclude<AdmissionResult, typeof GATE_UNSEEDED> | typeof GATE_BYPASSED;
 
 @Injectable()
 export class SaleService {
@@ -44,6 +49,7 @@ export class SaleService {
     const remainingStock = await this.remainingStock(
       sale.id,
       sale.item.productId,
+      now,
     );
 
     return {
@@ -53,7 +59,7 @@ export class SaleService {
       startsAt: sale.startsAt.toISOString(),
       endsAt: sale.endsAt.toISOString(),
       serverTime: now.toISOString(),
-      item: { ...sale.item, remainingStock: remainingStock },
+      item: { ...sale.item, remainingStock },
     };
   }
 
@@ -77,35 +83,36 @@ export class SaleService {
       maxPerUser,
       now,
     });
-
     if (admission !== ResultStatus.Success && admission !== GATE_BYPASSED) {
       return rejected(admission);
     }
 
-    const holdsTicket = admission === ResultStatus.Success;
+    const holdsLease = admission === ResultStatus.Success;
 
     let result: PurchaseResult;
     try {
-      result = await this.reserve(sale.id, productId, userId);
+      result = await this.placeOrder(sale.id, productId, userId);
     } catch (err) {
       this.logger.error(
         `order write failed for ${userId}: ${errorMessage(err)}`,
       );
 
-      if (holdsTicket) {
-        await this.releaseQuietly(sale.id, productId, userId);
+      if (holdsLease) {
+        await this.cancelLease(sale.id, productId, userId);
       }
 
       throw new ServiceUnavailableException({ error: 'service unavailable' });
     }
 
-    if (result.status === ResultStatus.Rejected && holdsTicket) {
-      this.logger.warn(
-        `gate admitted ${userId} but database rejected: ${result.reason}`,
-      );
+    if (holdsLease) {
+      if (result.status === ResultStatus.Success) {
+        await this.confirmLease(sale.id, productId, userId);
+      } else {
+        this.logger.warn(
+          `gate admitted ${userId} but database rejected: ${result.reason}`,
+        );
 
-      if (result.reason === RejectionReason.LimitReached) {
-        await this.releaseQuietly(sale.id, productId, userId);
+        await this.cancelLease(sale.id, productId, userId);
       }
     }
 
@@ -118,7 +125,6 @@ export class SaleService {
 
     return {
       purchased: orders.length > 0,
-      unitsUsed: orders.length,
       maxPerUser: sale.item.maxPerUser,
       orders: orders.map((order) => ({
         orderId: order.id,
@@ -130,7 +136,7 @@ export class SaleService {
 
   // Only repository calls belong inside this transaction.
   // It holds a pooled connection.
-  private reserve(
+  private placeOrder(
     saleId: string,
     productId: string,
     userId: string,
@@ -168,28 +174,56 @@ export class SaleService {
     });
   }
 
-  private async admit(request: AdmitRequest) {
+  private async admit(request: AdmitRequest): Promise<Admission> {
     try {
-      return await this.admissionGate.admit(request);
+      let admission = await this.admissionGate.admit(request);
+      if (admission === GATE_UNSEEDED) {
+        this.logger.warn('gate unseeded, reseeding from database');
+
+        const { saleId, productId } = request;
+
+        const stock = await this.saleRepository.remainingStock(
+          saleId,
+          productId,
+        );
+        await this.admissionGate.seed(saleId, productId, stock);
+
+        admission = await this.admissionGate.admit(request);
+      }
+
+      return admission === GATE_UNSEEDED ? GATE_BYPASSED : admission;
     } catch (err) {
       this.logger.warn(
         `gate unavailable, admitting ${request.userId} directly to database: ${errorMessage(err)}`,
       );
-
       return GATE_BYPASSED;
     }
   }
 
-  private async releaseQuietly(
+  private async confirmLease(
     saleId: string,
     productId: string,
     userId: string,
   ): Promise<void> {
     try {
-      await this.admissionGate.release(saleId, productId, userId);
+      await this.admissionGate.confirm(saleId, productId, userId);
     } catch (err) {
       this.logger.warn(
-        `could not release ticket for ${userId}: ${errorMessage(err)}`,
+        `could not confirm lease for ${userId}: ${errorMessage(err)}`,
+      );
+    }
+  }
+
+  private async cancelLease(
+    saleId: string,
+    productId: string,
+    userId: string,
+  ): Promise<void> {
+    try {
+      await this.admissionGate.cancel(saleId, productId, userId);
+    } catch (err) {
+      this.logger.warn(
+        `could not cancel lease for ${userId}: ${errorMessage(err)}`,
       );
     }
   }
@@ -197,15 +231,17 @@ export class SaleService {
   private async remainingStock(
     saleId: string,
     productId: string,
+    now: Date,
   ): Promise<number> {
     try {
-      const remainingTickets = await this.admissionGate.remainingTickets(
+      const units = await this.admissionGate.remainingStock(
         saleId,
         productId,
+        now,
       );
 
-      if (remainingTickets !== null) {
-        return remainingTickets;
+      if (units !== null) {
+        return units;
       }
     } catch (err) {
       this.logger.warn(

@@ -9,7 +9,10 @@ export interface AdmitRequest {
   now: Date;
 }
 
-export type AdmissionResult = ResultStatus.Success | StockRejection;
+export const GATE_UNSEEDED = 'unseeded';
+
+export type AdmissionResult =
+  ResultStatus.Success | StockRejection | typeof GATE_UNSEEDED;
 
 export abstract class AdmissionGate {
   abstract seed(
@@ -17,15 +20,26 @@ export abstract class AdmissionGate {
     productId: string,
     stock: number,
   ): Promise<void>;
+
   abstract admit(request: AdmitRequest): Promise<AdmissionResult>;
-  abstract release(
+
+  abstract confirm(
     saleId: string,
     productId: string,
     userId: string,
-  ): Promise<boolean>;
-  abstract remainingTickets(
+  ): Promise<void>;
+
+  abstract cancel(
     saleId: string,
     productId: string,
+    userId: string,
+  ): Promise<void>;
+
+  abstract remainingStock(
+    saleId: string,
+    productId: string,
+    now: Date,
   ): Promise<number | null>;
+
   abstract reset(saleId: string, productId: string): Promise<void>;
 }
