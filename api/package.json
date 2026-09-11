@@ -21,7 +21,8 @@
     "db:migrate": "DOTENV_CONFIG_PATH=../.env ts-node -r dotenv/config db/migrate.ts",
     "test:integration": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest --config ./test/jest-integration.json",
     "db:seed": "DOTENV_CONFIG_PATH=../.env ts-node -r dotenv/config db/seed.ts",
-    "sale:reset": "DOTENV_CONFIG_PATH=../.env ts-node -r dotenv/config db/reset.ts"
+    "sale:reset": "DOTENV_CONFIG_PATH=../.env ts-node -r dotenv/config db/reset.ts",
+    "verify": "npm audit signatures && npm audit --audit-level=high"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",
@@ -42,7 +43,7 @@
     "@nestjs/testing": "^12.0.1",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.0.0",
+    "@types/node": "24.13.3",
     "@types/pg": "^8.23.1",
     "@types/supertest": "^7.0.0",
     "jest": "^30.0.0",
@@ -55,5 +56,8 @@
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^6.0.2"
+  },
+  "engines": {
+    "node": ">=24"
   }
 }
