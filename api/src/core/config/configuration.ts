@@ -17,7 +17,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port,
     databaseUrl,
     redisUrl,
-    rateLimitEnabled: parseBoolean(env.RATE_LIMIT_ENABLED, true),
   });
 }
 
@@ -101,12 +100,4 @@ function parseDate(
   }
 
   return value;
-}
-
-function parseBoolean(raw: string | undefined, fallback: boolean): boolean {
-  if (raw === undefined || raw.trim() === '') {
-    return fallback;
-  }
-
-  return !['false', '0', 'no', 'off'].includes(raw.trim().toLowerCase());
 }

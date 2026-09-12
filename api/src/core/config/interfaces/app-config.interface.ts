@@ -7,5 +7,4 @@ export interface AppConfig {
   port: number;
   databaseUrl: string;
   redisUrl: string;
-  rateLimitEnabled: boolean;
 }
