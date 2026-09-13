@@ -161,7 +161,7 @@ export function OrdersPage() {
         {state.status === 'loaded' && (
           <p className="text-muted-foreground text-xs">
             {state.purchases.orders.length} of {state.purchases.maxPerUser}{' '}
-            unit(s) used in this sale.
+            item(s) bought in this sale.
           </p>
         )}
       </CardContent>

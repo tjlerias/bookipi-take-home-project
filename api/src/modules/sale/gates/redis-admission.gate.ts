@@ -6,7 +6,7 @@ import {
   AdmissionResult,
   AdmitRequest,
 } from '../interfaces/admission-gate.interface';
-import { availableKey, leasesKey, unitsKey } from './redis-admission.keys';
+import { availableKey, leasesKey, quantityKey } from './redis-admission.keys';
 import {
   ADMIT_SCRIPT,
   CONFIRM_SCRIPT,
@@ -19,7 +19,7 @@ interface GateCommands {
   admitUser(
     availableKey: string,
     leasesKey: string,
-    unitsKey: string,
+    quantityKey: string,
     userId: string,
     nowMs: string,
     expiresAtMs: string,
@@ -29,7 +29,7 @@ interface GateCommands {
   confirmUser(
     availableKey: string,
     leasesKey: string,
-    unitsKey: string,
+    quantityKey: string,
     userId: string,
   ): Promise<number>;
 
@@ -71,7 +71,7 @@ export class RedisAdmissionGate implements AdmissionGate {
     return this.redisClient.admitUser(
       availableKey(saleId, productId),
       leasesKey(saleId, productId),
-      unitsKey(saleId, productId),
+      quantityKey(saleId, productId),
       userId,
       String(now.getTime()),
       String(now.getTime() + LEASE_TTL_MS),
@@ -87,7 +87,7 @@ export class RedisAdmissionGate implements AdmissionGate {
     await this.redisClient.confirmUser(
       availableKey(saleId, productId),
       leasesKey(saleId, productId),
-      unitsKey(saleId, productId),
+      quantityKey(saleId, productId),
       userId,
     );
   }
@@ -117,7 +117,7 @@ export class RedisAdmissionGate implements AdmissionGate {
     await this.redisClient.del(
       availableKey(saleId, productId),
       leasesKey(saleId, productId),
-      unitsKey(saleId, productId),
+      quantityKey(saleId, productId),
     );
   }
 }

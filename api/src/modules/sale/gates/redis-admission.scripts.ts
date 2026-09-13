@@ -3,25 +3,25 @@ import { ResultStatus } from '../enums/result-status.enum';
 import { GATE_UNSEEDED } from '../interfaces/admission-gate.interface';
 
 /**
- * Atomically grants a user a short-lived lease on one unit of a sale item.
+ * Atomically grants a user a short-lived lease on one item.
  * Expired leases are purged first, so a lease that was never confirmed stops
  * counting on its own without any background job.
  *
  * KEYS:
- *   KEYS[1] - Units available (not yet confirmed sold)
+ *   KEYS[1] - Items available (not yet confirmed sold)
  *   KEYS[2] - Sorted set of live leases (user id -> expiry time in ms)
- *   KEYS[3] - Hash of confirmed units per user (user id -> count)
+ *   KEYS[3] - Hash of confirmed quantity per user (user id -> count)
  *
  * ARGV:
  *   ARGV[1] - User id
  *   ARGV[2] - Current time in ms; leases scored at or below it are expired
  *   ARGV[3] - Expiry time in ms for the new lease
- *   ARGV[4] - Maximum units one user may buy
+ *   ARGV[4] - Maximum items one user may buy
  *
  * Returns:
  *   "success"       - Lease granted
- *   "limit_reached" - User already holds a live lease, or has confirmed the maximum units
- *   "sold_out"      - No units left once live leases are counted
+ *   "limit_reached" - User already holds a live lease, or has confirmed the maximum items
+ *   "sold_out"      - No items left once live leases are counted
  *   "unseeded"      - The item has no available count in Redis (never seeded, or Redis lost its data)
  */
 export const ADMIT_SCRIPT = `
@@ -50,14 +50,14 @@ return '${ResultStatus.Success}'
 `;
 
 /**
- * Atomically confirms a sale: the lease is consumed, one available unit is
+ * Atomically confirms a sale: the lease is consumed, one available item is
  * taken, and the user's confirmed count grows. Runs after the database
- * transaction committed, so it counts the unit even if the lease had expired.
+ * transaction committed, so it counts the item even if the lease had expired.
  *
  * KEYS:
- *   KEYS[1] - Units available
+ *   KEYS[1] - Items available
  *   KEYS[2] - Sorted set of live leases
- *   KEYS[3] - Hash of confirmed units per user
+ *   KEYS[3] - Hash of confirmed quantity per user
  *
  * ARGV:
  *   ARGV[1] - User id
@@ -70,10 +70,10 @@ return 1
 `;
 
 /**
- * Reports units still available after purging expired leases.
+ * Reports items still available after purging expired leases.
  *
  * KEYS:
- *   KEYS[1] - Units available
+ *   KEYS[1] - Items available
  *   KEYS[2] - Sorted set of live leases
  *
  * ARGV:

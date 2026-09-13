@@ -132,7 +132,7 @@ describe('Purchase transaction against Postgres (integration)', () => {
     await expect(sales.remainingStock(saleId, PRODUCT)).resolves.toBe(1);
   });
 
-  it('allows up to maxPerUser units and records each order', async () => {
+  it('allows up to maxPerUser items and records each order', async () => {
     await seedSale(5, 2);
     const service = buildService(2);
 

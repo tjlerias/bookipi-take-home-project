@@ -11,6 +11,6 @@ export function leasesKey(saleId: string, productId: string): string {
   return `${itemPrefix(saleId, productId)}:leases`;
 }
 
-export function unitsKey(saleId: string, productId: string): string {
-  return `${itemPrefix(saleId, productId)}:units`;
+export function quantityKey(saleId: string, productId: string): string {
+  return `${itemPrefix(saleId, productId)}:quantity`;
 }

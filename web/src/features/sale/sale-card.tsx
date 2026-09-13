@@ -55,12 +55,12 @@ const REJECTION_MESSAGE: Record<RejectionReason, Message> = {
   limit_reached: {
     tone: 'info',
     title: 'You already have this item',
-    detail: 'Each customer can buy a limited number of units in this sale.',
+    detail: 'Each customer can buy a limited number of items in this sale.',
   },
   sold_out: {
     tone: 'error',
     title: 'Sold out',
-    detail: 'All units have been claimed.',
+    detail: 'All items have been claimed.',
   },
   upcoming: { tone: 'info', title: 'The sale has not started yet' },
   ended: { tone: 'info', title: 'The sale has ended' },
@@ -117,7 +117,7 @@ export function SaleCard({ sale, clockOffsetMs, onPurchased }: Props) {
           {sale.status === 'active' && (
             <>Ends in {formatDuration(countdownMs)}</>
           )}
-          {sale.status === 'sold_out' && <>Every unit has been claimed.</>}
+          {sale.status === 'sold_out' && <>Every item has been claimed.</>}
           {sale.status === 'ended' && <>This sale is over.</>}
         </CardDescription>
       </CardHeader>

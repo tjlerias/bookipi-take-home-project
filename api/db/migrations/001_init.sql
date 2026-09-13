@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS sale_allocations (
   sale_id    TEXT NOT NULL,
   product_id TEXT NOT NULL,
   user_id    TEXT NOT NULL,
-  units      INTEGER NOT NULL CHECK (units > 0),
+  quantity   INTEGER NOT NULL CHECK (quantity > 0),
   PRIMARY KEY (sale_id, product_id, user_id),
   FOREIGN KEY (sale_id, product_id) REFERENCES sale_items (sale_id, product_id)
 );

@@ -3,7 +3,7 @@ import { SaleAllocationRepository } from '../../src/modules/sale/interfaces/sale
 import { undoOf } from './memory-transaction.runner';
 
 export class MemorySaleAllocationRepository implements SaleAllocationRepository {
-  readonly units = new Map<string, number>();
+  readonly quantity = new Map<string, number>();
   failWith?: Error;
 
   constructor(private readonly maxPerUser: number) {}
@@ -17,12 +17,12 @@ export class MemorySaleAllocationRepository implements SaleAllocationRepository 
     if (this.failWith) {
       throw this.failWith;
     }
-    const used = this.units.get(userId) ?? 0;
+    const used = this.quantity.get(userId) ?? 0;
     if (used >= this.maxPerUser) {
       return false;
     }
-    this.units.set(userId, used + 1);
-    undoOf(tx).push(() => this.units.set(userId, used));
+    this.quantity.set(userId, used + 1);
+    undoOf(tx).push(() => this.quantity.set(userId, used));
     return true;
   }
 }

@@ -40,7 +40,7 @@ describe('RedisAdmissionGate (integration)', () => {
     await expect(remaining()).resolves.toBe(2);
   });
 
-  it('admits distinct users until units run out, counting live leases', async () => {
+  it('admits distinct users until items run out, counting live leases', async () => {
     await gate.seed(saleId, PRODUCT, 2);
 
     await expect(admit('a')).resolves.toBe(ResultStatus.Success);
@@ -57,7 +57,7 @@ describe('RedisAdmissionGate (integration)', () => {
     await expect(remaining()).resolves.toBe(1);
   });
 
-  it('allows up to maxPerUser units, one confirmed lease at a time', async () => {
+  it('allows up to maxPerUser items, one confirmed lease at a time', async () => {
     await gate.seed(saleId, PRODUCT, 5);
 
     await expect(admit('a', 2)).resolves.toBe(ResultStatus.Success);
@@ -68,7 +68,7 @@ describe('RedisAdmissionGate (integration)', () => {
     await expect(remaining()).resolves.toBe(3);
   });
 
-  it('confirm consumes the unit and clears the lease', async () => {
+  it('confirm consumes the item and clears the lease', async () => {
     await gate.seed(saleId, PRODUCT, 2);
     await admit('a');
 
@@ -77,7 +77,7 @@ describe('RedisAdmissionGate (integration)', () => {
     await expect(admit('b')).resolves.toBe(ResultStatus.Success);
   });
 
-  it('cancel frees the unit immediately', async () => {
+  it('cancel frees the item immediately', async () => {
     await gate.seed(saleId, PRODUCT, 1);
     await admit('a');
     await expect(admit('b')).resolves.toBe(RejectionReason.SoldOut);
@@ -86,7 +86,7 @@ describe('RedisAdmissionGate (integration)', () => {
     await expect(admit('b')).resolves.toBe(ResultStatus.Success);
   });
 
-  it('an unconfirmed lease expires and frees the unit on its own', async () => {
+  it('an unconfirmed lease expires and frees the item on its own', async () => {
     await gate.seed(saleId, PRODUCT, 1);
     await admit('a');
     await expect(admit('b')).resolves.toBe(RejectionReason.SoldOut);
@@ -96,20 +96,20 @@ describe('RedisAdmissionGate (integration)', () => {
     await expect(admit('b', 1, LATER)).resolves.toBe(ResultStatus.Success);
   });
 
-  it('never admits more users than units under concurrency', async () => {
-    const units = 20;
+  it('never admits more users than stock under concurrency', async () => {
+    const stock = 20;
     const attempts = 500;
-    await gate.seed(saleId, PRODUCT, units);
+    await gate.seed(saleId, PRODUCT, stock);
 
     const results = await Promise.all(
       Array.from({ length: attempts }, (_, i) => admit(`user-${i}`)),
     );
 
     expect(results.filter((r) => r === ResultStatus.Success)).toHaveLength(
-      units,
+      stock,
     );
     expect(results.filter((r) => r === RejectionReason.SoldOut)).toHaveLength(
-      attempts - units,
+      attempts - stock,
     );
     await expect(remaining()).resolves.toBe(0);
   });

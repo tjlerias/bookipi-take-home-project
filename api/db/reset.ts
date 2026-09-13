@@ -76,7 +76,7 @@ async function reset(): Promise<void> {
     await gate.seed(SALE_ITEM.saleId, SALE_ITEM.productId, SALE_ITEM.stock);
 
     console.log(
-      `sale "${SALE.id}": redis available units reset to ${SALE_ITEM.stock}`,
+      `sale "${SALE.id}": redis available items reset to ${SALE_ITEM.stock}`,
     );
   } catch (err) {
     await postgresClient.query('ROLLBACK').catch(() => undefined);

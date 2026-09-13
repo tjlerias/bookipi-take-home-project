@@ -234,14 +234,14 @@ export class SaleService {
     now: Date,
   ): Promise<number> {
     try {
-      const units = await this.admissionGate.remainingStock(
+      const remainingStock = await this.admissionGate.remainingStock(
         saleId,
         productId,
         now,
       );
 
-      if (units !== null) {
-        return units;
+      if (remainingStock !== null) {
+        return remainingStock;
       }
     } catch (err) {
       this.logger.warn(

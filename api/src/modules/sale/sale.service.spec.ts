@@ -220,7 +220,7 @@ describe('SaleService.purchase', () => {
     });
   });
 
-  it('creates an order, confirms the lease, and consumes a unit', async () => {
+  it('creates an order, confirms the lease, and consumes an item', async () => {
     const { service, gate, sales, allocations } = await build();
 
     await expect(service.purchase('a')).resolves.toEqual({
@@ -229,9 +229,9 @@ describe('SaleService.purchase', () => {
     });
     expect(gate.available).toBe(4);
     expect(gate.leases.size).toBe(0);
-    expect(gate.units.get('a')).toBe(1);
+    expect(gate.quantity.get('a')).toBe(1);
     expect(sales.stock).toBe(4);
-    expect(allocations.units.get('a')).toBe(1);
+    expect(allocations.quantity.get('a')).toBe(1);
   });
 
   it('rejects a repeat buyer at the gate when the limit is 1', async () => {
@@ -242,7 +242,7 @@ describe('SaleService.purchase', () => {
     expect(sales.stock).toBe(4);
   });
 
-  it('allows up to the configured units per user', async () => {
+  it('allows up to the configured items per user', async () => {
     const { service } = await build({ maxPerUser: 2 });
 
     await expect(service.purchase('a')).resolves.toMatchObject({
@@ -254,7 +254,7 @@ describe('SaleService.purchase', () => {
     await expect(service.purchase('a')).resolves.toEqual(limitReached);
   });
 
-  it('reports sold_out once units are gone', async () => {
+  it('reports sold_out once items are gone', async () => {
     const { service } = await build({ gateAvailable: 1 });
     await service.purchase('a');
 
@@ -268,7 +268,7 @@ describe('SaleService.purchase', () => {
       status: ResultStatus.Success,
     });
     expect(gate.available).toBe(2);
-    expect(gate.units.get('a')).toBe(1);
+    expect(gate.quantity.get('a')).toBe(1);
   });
 
   it('bypasses the gate and still enforces rules when the gate is down', async () => {
@@ -286,7 +286,7 @@ describe('SaleService.purchase', () => {
     const { service, allocations, orders } = await build({ dbStock: 0 });
 
     await expect(service.purchase('a')).resolves.toEqual(soldOut);
-    expect(allocations.units.get('a') ?? 0).toBe(0);
+    expect(allocations.quantity.get('a') ?? 0).toBe(0);
     expect(orders.orders).toHaveLength(0);
   });
 
@@ -299,12 +299,12 @@ describe('SaleService.purchase', () => {
     );
     expect(gate.available).toBe(5);
     expect(gate.leases.size).toBe(0);
-    expect(gate.units.has('a')).toBe(false);
+    expect(gate.quantity.has('a')).toBe(false);
   });
 
   it('cancels the lease when the database already has the user at the limit', async () => {
     const { service, gate, allocations } = await build();
-    allocations.units.set('a', 1);
+    allocations.quantity.set('a', 1);
 
     await expect(service.purchase('a')).resolves.toEqual(limitReached);
     expect(gate.available).toBe(5);
