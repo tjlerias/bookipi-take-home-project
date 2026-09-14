@@ -22,7 +22,10 @@
     "test:integration": "NODE_OPTIONS=\"--experimental-vm-modules --disable-warning=ExperimentalWarning\" jest --config ./test/jest-integration.json",
     "db:seed": "ts-node -r dotenv/config db/seed.ts",
     "sale:reset": "ts-node -r dotenv/config db/reset.ts",
-    "verify": "npm audit signatures && npm audit --audit-level=high"
+    "verify": "npm audit signatures && npm audit --audit-level=high",
+    "stress:spike": "docker compose run --rm k6 run /stress/spike.js",
+    "stress:hammer": "docker compose run --rm k6 run /stress/hammer.js",
+    "stress:sustained": "docker compose run --rm k6 run /stress/sustained.js"
   },
   "dependencies": {
     "@nestjs/common": "^12.0.1",

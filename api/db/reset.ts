@@ -4,6 +4,9 @@ import { loadConfig, loadSaleWindow } from '../src/core/config/configuration';
 import { RedisAdmissionGate } from '../src/modules/sale/gates/redis-admission.gate';
 import { PRODUCT, SALE, SALE_ITEM } from './seed-data';
 
+// STOCK overrides the seed stock for a single reset, so a load test can ask for more items.
+const stock = Number(process.env.STOCK ?? SALE_ITEM.stock);
+
 async function reset(): Promise<void> {
   const { databaseUrl, redisUrl } = loadConfig();
   const window = loadSaleWindow();
@@ -60,7 +63,7 @@ async function reset(): Promise<void> {
         SALE_ITEM.saleId,
         SALE_ITEM.productId,
         SALE_ITEM.salePriceCents,
-        SALE_ITEM.stock,
+        stock,
         SALE_ITEM.maxPerUser,
       ],
     );
@@ -68,16 +71,14 @@ async function reset(): Promise<void> {
     await postgresClient.query('COMMIT');
 
     console.log(
-      `sale "${SALE.id}": ${deleted.rowCount ?? 0} orders deleted, stock reset to ${SALE_ITEM.stock}`,
+      `sale "${SALE.id}": ${deleted.rowCount ?? 0} orders deleted, stock reset to ${stock}`,
     );
 
     const gate = new RedisAdmissionGate(redisClient);
     await gate.reset(SALE_ITEM.saleId, SALE_ITEM.productId);
-    await gate.seed(SALE_ITEM.saleId, SALE_ITEM.productId, SALE_ITEM.stock);
+    await gate.seed(SALE_ITEM.saleId, SALE_ITEM.productId, stock);
 
-    console.log(
-      `sale "${SALE.id}": redis available items reset to ${SALE_ITEM.stock}`,
-    );
+    console.log(`sale "${SALE.id}": redis available items reset to ${stock}`);
   } catch (err) {
     await postgresClient.query('ROLLBACK').catch(() => undefined);
     throw err;

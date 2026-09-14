@@ -27,5 +27,15 @@ services:
       timeout: 2s
       retries: 10
 
+  k6:
+    image: grafana/k6:1.4.0
+    profiles: ["stress"]
+    volumes:
+      - ../stress:/stress:ro
+    environment:
+      API_URL: http://host.docker.internal:3000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   pgdata:
